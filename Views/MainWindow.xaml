@@ -1,0 +1,94 @@
+﻿<mah:MetroWindow x:Class="TransportCyclesResolver.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:TransportCyclesResolver.Views"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        mc:Ignorable="d"
+        Title="TransportCyclesResolver" TitleCharacterCasing="Normal" Height="788" MinHeight="400" Width="730" MinWidth="400" 
+        FontSize="14" WindowStartupLocation="CenterScreen" dialog:DialogParticipation.Register="{Binding}" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="ContentRendered">
+            <i:InvokeCommandAction Command="{Binding WindowInitializedCommand}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Header="Open.." Command="{Binding OpenFileCommand}">
+                    <MenuItem.Icon>
+                        <fa:ImageAwesome Icon="FolderOpen" Height="18" Margin="3"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+
+        <Grid Grid.Row="1" Background="LightGray">
+            <ItemsControl ItemsSource="{Binding Fields}" Margin="5">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="{Binding FieldsHeight}" Columns="{Binding FieldsWidth}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderThickness="5" CornerRadius="10">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="MouseEnter">
+                                    <i:InvokeCommandAction Command="{Binding DataContext.FieldMouseEnterCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ItemsControl}}}" CommandParameter="{Binding}"/>
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="MouseLeave">
+                                    <i:InvokeCommandAction Command="{Binding DataContext.FieldMouseLeaveCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ItemsControl}}}" CommandParameter="{Binding}"/>
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="MouseLeftButtonDown">
+                                    <i:InvokeCommandAction Command="{Binding DataContext.FieldClickCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ItemsControl}}}" CommandParameter="{Binding}"/>
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                            
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="White"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Cursor" Value="Arrow"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsHovered}" Value="True">
+                                            <Setter Property="Background" Value="#40FF0000"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <Viewbox>
+                                <Grid Height="100" Width="100">
+                                    <Label Content="{Binding Value}" FontSize="36" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <Label Content="{Binding CycleIndex}" FontSize="24" Foreground="Red" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </Viewbox>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock Text=" "/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</mah:MetroWindow>
