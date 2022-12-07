@@ -147,7 +147,51 @@ namespace TransportCyclesResolver.ViewModels
 
         private List<Field> FindCycle(Field startField)
         {
-            return new List<Field>() { Fields.ElementAt(0), Fields.ElementAt(1), Fields.ElementAt(5), Fields.ElementAt(4) };
+            var endField = startField;
+            var cycle = new List<Field>();
+
+            do
+            {
+                cycle.Add(endField);
+
+
+                if (cycle.Count(f => f.X == endField.X) < 2)
+                {
+                    var sameColumnField = Fields.FirstOrDefault(f => !f.IsEmpty && f.X == endField.X && (!cycle.Contains(f) || (cycle.Count > 1 && f == startField)));
+
+                    if (sameColumnField != null)
+                    {
+                        endField = sameColumnField;
+                        continue;
+                    }
+                }
+
+                if (cycle.Count(f => f.Y == endField.Y) < 2)
+                {
+                    var sameRowField = Fields.FirstOrDefault(f => !f.IsEmpty && f.Y == endField.Y && (!cycle.Contains(f) || (cycle.Count > 1 && f == startField)));
+
+                    if (sameRowField != null)
+                    {
+                        endField = sameRowField;
+                        continue;
+                    }
+                }
+
+                if (endField.X == startField.X || endField.Y == startField.Y)
+                {
+                    break;
+                }
+
+                //trzeba zrobić rekurencję do przeszukiwania ścieżki
+
+            } while (endField != startField);
+
+            return cycle;
+        }
+
+        private Field GetField(int x, int y)
+        {
+            return Fields.FirstOrDefault(f => f.X == x && f.Y == y && !f.IsEmpty);
         }
     }
 }
