@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Web.Caching;
 using System.Windows;
 using System.Windows.Input;
 using TransportCyclesResolver.Models;
@@ -18,25 +19,85 @@ namespace TransportCyclesResolver.ViewModels
         public ICommand FieldMouseEnterCommand { get; set; }
         public ICommand FieldMouseLeaveCommand { get; set; }
         public ICommand FieldClickCommand { get; set; }
+        public ICommand ShowCycleCommand { get; set; }
         #endregion
 
         #region Properties
         public IDialogCoordinator DialogCoordinator { get; set; }
 
-        public List<Field> Fields { get; set; }
+        private List<Field> _fields;
+        public List<Field> Fields
+        {
+            get
+            {
+                return _fields;
+            }
+            set
+            {
+                _fields = value;
+                OnPropertyChanged();
+                OnPropertyChanged("FieldsWidth");
+                OnPropertyChanged("FieldsHeight");
+            }
+        }
+
         public int FieldsWidth => Fields != null ? Fields.Last().X : 0;
         public int FieldsHeight => Fields != null ? Fields.Last().Y : 0;
+
+        private List<Cycle> _cycles;
+        public List<Cycle> Cycles
+        {
+            get
+            {
+                return _cycles;
+            }
+            set
+            {
+                _cycles = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private Cycle _selectedCycle;
+        public Cycle SelectedCycle
+        {
+            get
+            {
+                return _selectedCycle;
+            }
+            set
+            {
+                _selectedCycle = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _listBoxTitle;
+        public string ListBoxTitle
+        {
+            get
+            {
+                return _listBoxTitle;
+            }
+            set
+            {
+                _listBoxTitle = value;
+                OnPropertyChanged();
+            }
+        }
         #endregion
 
         public MainViewModel(IDialogCoordinator dialogCoordinator)
         {
             DialogCoordinator = dialogCoordinator;
+            ListBoxTitle = "Select a field";
 
             WindowInitializedCommand = new RelayCommand(WindowInitialized);
             OpenFileCommand = new RelayCommand(OpenFile);
             FieldMouseEnterCommand = new RelayCommand(FieldMouseEnter);
             FieldMouseLeaveCommand = new RelayCommand(FieldMouseLeave);
             FieldClickCommand = new RelayCommand(FieldClick);
+            ShowCycleCommand = new RelayCommand(ShowCycle);
         }
 
         private void WindowInitialized(object obj)
@@ -82,7 +143,7 @@ namespace TransportCyclesResolver.ViewModels
                 return;
             }
 
-            Fields = new List<Field>();
+            var fields = new List<Field>();
 
             for (int i = 0; i < fileContent.Length; i++)
             {
@@ -97,7 +158,7 @@ namespace TransportCyclesResolver.ViewModels
                         value = outValue;
                     }
 
-                    Fields.Add(new Field()
+                    fields.Add(new Field()
                     {
                         X = j + 1,
                         Y = i + 1,
@@ -106,9 +167,7 @@ namespace TransportCyclesResolver.ViewModels
                 }
             }
 
-            OnPropertyChanged("Fields");
-            OnPropertyChanged("FieldsWidth");
-            OnPropertyChanged("FieldsHeight");
+            Fields = fields;
         }
 
         private void FieldMouseEnter(object obj)
@@ -134,18 +193,26 @@ namespace TransportCyclesResolver.ViewModels
             var field = obj as Field;
             if (field != null && !field.IsEmpty)
             {
+                ListBoxTitle = $"Selected field: ({field.X}, {field.Y})";
                 field.IsHovered = false;
-                var cycle = FindCycles(field);
 
-                foreach(var singleField in Fields)
-                {
-                    var index = cycle.FirstOrDefault()?.IndexOf(singleField);
-                    singleField.CycleIndex = index < 0 ? null : index + 1;
-                }
+                var cycles = FindCycles(field);
+                cycles.ForEach(c => c.Name = $"Cycle #{cycles.IndexOf(c) + 1}");
+                Cycles = cycles;
+                SelectedCycle = Cycles.FirstOrDefault();
             }
         }
 
-        private List<List<Field>> FindCycles(Field startField, List<Field> cycle = null, List<Field> bannedFields = null)
+        private void ShowCycle(object obj = null)
+        {
+            foreach (var field in Fields)
+            {
+                var index = SelectedCycle?.Fields?.IndexOf(field);
+                field.CycleIndex = index < 0 ? null : index + 1;
+            }
+        }
+
+        private List<Cycle> FindCycles(Field startField, List<Field> cycle = null, List<Field> bannedFields = null)
         {
             if (cycle == null)
             {
@@ -158,9 +225,16 @@ namespace TransportCyclesResolver.ViewModels
 
             // warunek końcowy
             if (cycle.Count() > 2 && (startField.X == cycle[0].X || startField.Y == cycle[0].Y) &&
-                !bannedFields.Intersect(GetRoute(startField, cycle[0])).Any())
+                !bannedFields.Intersect(GetRoute(startField, cycle[0])).Any() &&
+                !GetRoute(startField, cycle[0]).Any(x => x.IsEmpty))
             {
-                return new List<List<Field>>() { cycle };
+                return new List<Cycle>()
+                {
+                    new Cycle()
+                    {
+                        Fields = cycle
+                    }
+                };
             }
 
             var searchColumn = cycle.Count(f => f.X == startField.X) < 2;
@@ -168,7 +242,8 @@ namespace TransportCyclesResolver.ViewModels
 
             var potentialFields = Fields.FindAll(f => !f.IsEmpty &&
                    !bannedFields.Intersect(GetRoute(startField, f, true)).Any() &&
-                   ((searchColumn && f.X == startField.X) || (searchRow && f.Y == startField.Y)))
+                   ((searchColumn && f.X == startField.X) || (searchRow && f.Y == startField.Y)) &&
+                   !GetRoute(startField, f).Any(x => x.IsEmpty))
                 .OrderBy(f => f.X != startField.X)
                 .OrderBy(f => f.Value == 0)
                 .ThenBy(f => f == cycle[0]);
@@ -178,7 +253,7 @@ namespace TransportCyclesResolver.ViewModels
             var potential = string.Join(", ", potentialFields.Select(x => x.Value));
             var banned = string.Join(", ", bannedFields.Select(x => x.Value));
 
-            var cycles = new List<List<Field>>();
+            var cycles = new List<Cycle>();
 
             foreach (var field in potentialFields)
             {

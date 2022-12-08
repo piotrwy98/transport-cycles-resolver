@@ -9,7 +9,7 @@
         xmlns:local="clr-namespace:TransportCyclesResolver.Views"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="TransportCyclesResolver" TitleCharacterCasing="Normal" Height="788" MinHeight="400" Width="730" MinWidth="400" 
+        Title="TransportCyclesResolver" TitleCharacterCasing="Normal" Height="788" MinHeight="400" Width="930" MinWidth="400" 
         FontSize="14" WindowStartupLocation="CenterScreen" dialog:DialogParticipation.Register="{Binding}" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="ContentRendered">
@@ -35,7 +35,12 @@
         </Menu>
 
         <Grid Grid.Row="1" Background="LightGray">
-            <ItemsControl ItemsSource="{Binding Fields}" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="200"/>
+            </Grid.ColumnDefinitions>
+
+            <ItemsControl Grid.Column="0" ItemsSource="{Binding Fields}" Padding="5">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Rows="{Binding FieldsHeight}" Columns="{Binding FieldsWidth}"/>
@@ -83,6 +88,30 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <Border Grid.Column="1" BorderThickness="10 10 10 10" CornerRadius="10" Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    
+                    <Label Grid.Row="0" Content="{Binding ListBoxTitle}" FontWeight="DemiBold"/>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Cycles}" SelectedItem="{Binding SelectedCycle}" ScrollViewer.VerticalScrollBarVisibility="Auto" Margin="0 0 0 5">
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="SelectionChanged">
+                                <i:InvokeCommandAction Command="{Binding DataContext.ShowCycleCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}"/>
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                        
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding Name}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
         </Grid>
 
         <StatusBar Grid.Row="2">
