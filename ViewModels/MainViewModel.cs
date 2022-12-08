@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using TransportCyclesResolver.Models;
 
@@ -139,54 +140,81 @@ namespace TransportCyclesResolver.ViewModels
 
                 foreach(var singleField in Fields)
                 {
-                    var index = cycle.IndexOf(singleField);
-                    singleField.CycleIndex = index < 0 ? (int?)null : index + 1;
+                    var index = cycle?.IndexOf(singleField);
+                    singleField.CycleIndex = index < 0 ? null : index + 1;
                 }
             }
         }
 
-        private List<Field> FindCycle(Field startField)
+        private List<Field> FindCycle(Field startField, List<Field> cycle = null, List<Field> bannedFields = null)
         {
-            var endField = startField;
-            var cycle = new List<Field>();
-
-            do
+            if (cycle == null)
             {
-                cycle.Add(endField);
+                cycle = new List<Field>();
+                bannedFields = new List<Field>();
+            }
 
+            cycle.Add(startField);
+            bannedFields.Add(startField);
 
-                if (cycle.Count(f => f.X == endField.X) < 2)
+            // warunek końcowy
+            if (cycle.Count() > 2 && (startField.X == cycle[0].X || startField.Y == cycle[0].Y) &&
+                !bannedFields.Intersect(GetRoute(startField, cycle[0])).Any())
+            {
+                return cycle;
+            }
+
+            var searchColumn = cycle.Count(f => f.X == startField.X) < 2;
+            var searchRow = cycle.Count(f => f.Y == startField.Y) < 2;
+
+            var potentialFields = Fields.FindAll(f => !f.IsEmpty &&
+                   !bannedFields.Intersect(GetRoute(startField, f, true)).Any() &&
+                   ((searchColumn && f.X == startField.X) || (searchRow && f.Y == startField.Y)))
+                .OrderBy(f => f.X != startField.X)
+                .OrderBy(f => f.Value == 0)
+                .ThenBy(f => f == cycle[0]);
+
+            var position = $"{startField.Value} ({startField.X}, {startField.Y})";
+            var last = cycle.Count > 1 ? $"{cycle[cycle.Count() - 2].Value} ({cycle[cycle.Count() - 2].X}, {cycle[cycle.Count() - 2].Y})" : "NONE";
+            var potential = string.Join(", ", potentialFields.Select(x => x.Value));
+            var banned = string.Join(", ", bannedFields.Select(x => x.Value));
+
+            foreach (var field in potentialFields)
+            {
+                List<Field> newBannedFields = bannedFields.ToList();
+
+                newBannedFields.AddRange(GetRoute(startField, field));
+
+                var newCycle = FindCycle(field, cycle.ToList(), newBannedFields);
+
+                if (newCycle != null)
                 {
-                    var sameColumnField = Fields.FirstOrDefault(f => !f.IsEmpty && f.X == endField.X && (!cycle.Contains(f) || (cycle.Count > 1 && f == startField)));
-
-                    if (sameColumnField != null)
-                    {
-                        endField = sameColumnField;
-                        continue;
-                    }
+                    return newCycle;
                 }
+            }
 
-                if (cycle.Count(f => f.Y == endField.Y) < 2)
-                {
-                    var sameRowField = Fields.FirstOrDefault(f => !f.IsEmpty && f.Y == endField.Y && (!cycle.Contains(f) || (cycle.Count > 1 && f == startField)));
+            return null;
+        }
 
-                    if (sameRowField != null)
-                    {
-                        endField = sameRowField;
-                        continue;
-                    }
-                }
+        private List<Field> GetRoute(Field startField, Field endField, bool includeEndField = false)
+        {
+            List<Field> route;
 
-                if (endField.X == startField.X || endField.Y == startField.Y)
-                {
-                    break;
-                }
+            if (startField.X == endField.X)
+            {
+                route = Fields.FindAll(f => f.X == startField.X && f.Y > Math.Min(startField.Y, endField.Y) && f.Y < Math.Max(startField.Y, endField.Y));
+            }
+            else // taki sam Y
+            {
+                route = Fields.FindAll(f => f.Y == startField.Y && f.X > Math.Min(startField.X, endField.X) && f.X < Math.Max(startField.X, endField.X));
+            }
 
-                //trzeba zrobić rekurencję do przeszukiwania ścieżki
+            if (includeEndField)
+            {
+                route.Add(endField);
+            }
 
-            } while (endField != startField);
-
-            return cycle;
+            return route;
         }
 
         private Field GetField(int x, int y)
