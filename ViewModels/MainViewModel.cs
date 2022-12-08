@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Documents;
 using System.Windows.Input;
 using TransportCyclesResolver.Models;
 
@@ -136,17 +135,17 @@ namespace TransportCyclesResolver.ViewModels
             if (field != null && !field.IsEmpty)
             {
                 field.IsHovered = false;
-                var cycle = FindCycle(field);
+                var cycle = FindCycles(field);
 
                 foreach(var singleField in Fields)
                 {
-                    var index = cycle?.IndexOf(singleField);
+                    var index = cycle.FirstOrDefault()?.IndexOf(singleField);
                     singleField.CycleIndex = index < 0 ? null : index + 1;
                 }
             }
         }
 
-        private List<Field> FindCycle(Field startField, List<Field> cycle = null, List<Field> bannedFields = null)
+        private List<List<Field>> FindCycles(Field startField, List<Field> cycle = null, List<Field> bannedFields = null)
         {
             if (cycle == null)
             {
@@ -161,7 +160,7 @@ namespace TransportCyclesResolver.ViewModels
             if (cycle.Count() > 2 && (startField.X == cycle[0].X || startField.Y == cycle[0].Y) &&
                 !bannedFields.Intersect(GetRoute(startField, cycle[0])).Any())
             {
-                return cycle;
+                return new List<List<Field>>() { cycle };
             }
 
             var searchColumn = cycle.Count(f => f.X == startField.X) < 2;
@@ -179,21 +178,19 @@ namespace TransportCyclesResolver.ViewModels
             var potential = string.Join(", ", potentialFields.Select(x => x.Value));
             var banned = string.Join(", ", bannedFields.Select(x => x.Value));
 
+            var cycles = new List<List<Field>>();
+
             foreach (var field in potentialFields)
             {
                 List<Field> newBannedFields = bannedFields.ToList();
 
                 newBannedFields.AddRange(GetRoute(startField, field));
 
-                var newCycle = FindCycle(field, cycle.ToList(), newBannedFields);
-
-                if (newCycle != null)
-                {
-                    return newCycle;
-                }
+                var newCycle = FindCycles(field, cycle.ToList(), newBannedFields);
+                cycles.AddRange(newCycle);
             }
 
-            return null;
+            return cycles;
         }
 
         private List<Field> GetRoute(Field startField, Field endField, bool includeEndField = false)
@@ -215,11 +212,6 @@ namespace TransportCyclesResolver.ViewModels
             }
 
             return route;
-        }
-
-        private Field GetField(int x, int y)
-        {
-            return Fields.FirstOrDefault(f => f.X == x && f.Y == y && !f.IsEmpty);
         }
     }
 }
