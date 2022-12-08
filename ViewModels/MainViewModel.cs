@@ -197,9 +197,9 @@ namespace TransportCyclesResolver.ViewModels
                 field.IsHovered = false;
 
                 var cycles = FindCycles(field);
-                cycles.ForEach(c => c.Name = $"Cycle #{cycles.IndexOf(c) + 1}");
+                cycles.ForEach(c => c.Name = $"Cycle {("#" + (cycles.IndexOf(c) + 1).ToString()).PadLeft(3)} ({c.Fields?.Count ?? 0} fields)");
+                SelectedCycle = cycles.FirstOrDefault();
                 Cycles = cycles;
-                SelectedCycle = Cycles.FirstOrDefault();
             }
         }
 
@@ -209,6 +209,118 @@ namespace TransportCyclesResolver.ViewModels
             {
                 var index = SelectedCycle?.Fields?.IndexOf(field);
                 field.CycleIndex = index < 0 ? null : index + 1;
+                field.UpLineGoUpVisibility = Visibility.Collapsed;
+                field.UpLineGoDownVisibility = Visibility.Collapsed;
+                field.DownLineVisibility = Visibility.Collapsed;
+                field.RightLineGoRightVisibility = Visibility.Collapsed;
+                field.RightLineGoLeftVisibility = Visibility.Collapsed;
+                field.LeftLineVisibility = Visibility.Collapsed;
+            }
+
+            if (SelectedCycle?.Fields != null)
+            {
+                for (int i = 0; i < SelectedCycle.Fields.Count; i++)
+                {
+                    // ustawiamy względem poprzedniego
+                    if (i > 0)
+                    {
+                        if (SelectedCycle.Fields[i - 1].Y != SelectedCycle.Fields[i].Y)
+                        {
+                            if (SelectedCycle.Fields[i - 1].Y < SelectedCycle.Fields[i].Y)
+                            {
+                                SelectedCycle.Fields[i].UpLineGoDownVisibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                SelectedCycle.Fields[i].DownLineVisibility = Visibility.Visible;
+                            }
+                        }
+                        else
+                        {
+                            if (SelectedCycle.Fields[i - 1].X < SelectedCycle.Fields[i].X)
+                            {
+                                SelectedCycle.Fields[i].LeftLineVisibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                SelectedCycle.Fields[i].RightLineGoLeftVisibility = Visibility.Visible;
+                            }
+                        }
+                    }
+
+                    var nextIndex = i + 1;
+
+                    if (i + 1 >= SelectedCycle.Fields.Count)
+                    {
+                        nextIndex = 0;
+                    }
+
+                    // ustawiamy względem kolejnego
+                    if (SelectedCycle.Fields[i].Y != SelectedCycle.Fields[nextIndex].Y)
+                    {
+                        var isGoingUp = false;
+
+                        if (SelectedCycle.Fields[i].Y < SelectedCycle.Fields[nextIndex].Y)
+                        {
+                            SelectedCycle.Fields[i].DownLineVisibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            SelectedCycle.Fields[i].UpLineGoUpVisibility = Visibility.Visible;
+                            isGoingUp = true;
+                        }
+
+                        var fieldsBetween = Fields.FindAll(f => f.X == SelectedCycle.Fields[i].X &&
+                            f.Y > Math.Min(SelectedCycle.Fields[i].Y, SelectedCycle.Fields[nextIndex].Y) &&
+                            f.Y < Math.Max(SelectedCycle.Fields[i].Y, SelectedCycle.Fields[nextIndex].Y));
+
+                        foreach (var field in fieldsBetween)
+                        {
+                            if (isGoingUp)
+                            {
+                                field.UpLineGoUpVisibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                field.UpLineGoDownVisibility = Visibility.Visible;
+                            }
+
+                            field.DownLineVisibility = Visibility.Visible;
+                        }
+                    }
+                    else
+                    {
+                        var isGoingRight = false;
+
+                        if (SelectedCycle.Fields[i].X < SelectedCycle.Fields[nextIndex].X)
+                        {
+                            SelectedCycle.Fields[i].RightLineGoRightVisibility = Visibility.Visible;
+                            isGoingRight = true;
+                        }
+                        else if (SelectedCycle.Fields[i].X > SelectedCycle.Fields[nextIndex].X)
+                        {
+                            SelectedCycle.Fields[i].LeftLineVisibility = Visibility.Visible;
+                        }
+
+                        var fieldsBetween = Fields.FindAll(f => f.Y == SelectedCycle.Fields[i].Y &&
+                            f.X > Math.Min(SelectedCycle.Fields[i].X, SelectedCycle.Fields[nextIndex].X) &&
+                            f.X < Math.Max(SelectedCycle.Fields[i].X, SelectedCycle.Fields[nextIndex].X));
+
+                        foreach (var field in fieldsBetween)
+                        {
+                            field.LeftLineVisibility = Visibility.Visible;
+
+                            if (isGoingRight)
+                            {
+                                field.RightLineGoRightVisibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                field.RightLineGoLeftVisibility = Visibility.Visible;
+                            }
+                        }
+                    } 
+                }
             }
         }
 
