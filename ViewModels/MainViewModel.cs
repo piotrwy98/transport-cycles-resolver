@@ -197,6 +197,8 @@ namespace TransportCyclesResolver.ViewModels
                 field.IsHovered = false;
 
                 var cycles = FindCycles(field);
+                cycles = cycles.Where(c => c.Fields.Where(f => f.CycleIndex % 2 == 0).Min(f => f.Value) != 0 &&
+                    !c.Fields.Where(f => f.CycleIndex % 2 == 0).Any(f => f.Value - c.Fields.Where(f2 => f2.CycleIndex % 2 == 0).Min(f2 => f2.Value) < 0)).ToList();
                 cycles.ForEach(c => c.Name = $"Cycle {("#" + (cycles.IndexOf(c) + 1).ToString()).PadLeft(3)} ({c.Fields?.Count ?? 0} fields)");
                 SelectedCycle = cycles.FirstOrDefault();
                 Cycles = cycles;

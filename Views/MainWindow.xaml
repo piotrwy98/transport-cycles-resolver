@@ -9,7 +9,7 @@
         xmlns:local="clr-namespace:TransportCyclesResolver.Views"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="TransportCyclesResolver" TitleCharacterCasing="Normal" Height="680" MinHeight="400" Width="930" MinWidth="400" 
+        Title="TransportCyclesResolver v1.2" TitleCharacterCasing="Normal" Height="680" MinHeight="400" Width="930" MinWidth="400" 
         FontSize="14" WindowStartupLocation="CenterScreen" dialog:DialogParticipation.Register="{Binding}" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="ContentRendered">
@@ -88,7 +88,7 @@
                                     </Grid.Resources>
 
                                     <Label Content="{Binding Value}" FontSize="36" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    <Label Content="{Binding CycleIndex}" FontSize="24" Foreground="Red" VerticalAlignment="Top" HorizontalAlignment="Right" Height="100"/>
+                                    <Label Content="{Binding Label}" FontSize="24" Foreground="Red" VerticalAlignment="Top" HorizontalAlignment="Right" Height="100"/>
 
                                     <Rectangle Width="26" Margin="12 0 0 -7" Visibility="{Binding DownLineVisibility}" VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                         <Rectangle.LayoutTransform>

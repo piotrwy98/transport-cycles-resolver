@@ -21,8 +21,11 @@ namespace TransportCyclesResolver.Models
             {
                 _cycleIndex = value;
                 OnPropertyChanged();
+                OnPropertyChanged("Label");
             }
         }
+
+        public string Label => CycleIndex.HasValue ? (CycleIndex % 2 == 0 ? "(-)" : "(+)") + _cycleIndex : null;
 
         public bool IsEmpty => !Value.HasValue;
 
